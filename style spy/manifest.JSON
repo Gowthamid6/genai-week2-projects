@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Style Spy",
+  "version": "1.0.0",
+  "description": "Click the icon on any website to see its colours and fonts, then save them as a kit and export CSS variables. Everything stays in your browser.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Style Spy",
+    "default_icon": {
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "icons": {
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  }
+}
+
+Claude finished the response
