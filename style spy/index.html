@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Style Spy</title>
+<style>
+:root{--ink:#1d1b2e;--muted:#6b6880;--accent:#4b2bd6;--line:#e4e0f3;--bg:#f6f5fc}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 system-ui,"Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--bg)}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 60px}
+h1{margin:0;font-size:30px;color:var(--accent)}
+.lead{color:var(--muted);margin:4px 0 18px;max-width:60ch}
+h2{font-size:15px;margin:18px 0 8px}h2 small{font-weight:400;color:var(--muted);margin-left:4px}
+.grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h2:first-child{margin-top:0}
+button{font:inherit;font-size:14px;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+button.alt{background:#fff;color:var(--accent)}button.del{background:#fff;color:#b3261e;border-color:#b3261e}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #a99cf0;outline-offset:1px}
+input,select,textarea{font:inherit;font-size:14px;padding:8px 10px;border:1px solid #cfcbe0;border-radius:8px;background:#fff;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.row input{flex:1;min-width:140px}
+iframe{width:100%;height:380px;border:1px solid var(--line);border-radius:8px;background:#fff;display:block}
+textarea{width:100%;min-height:110px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.cols{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sw{border:1px solid #0002;border-radius:8px;height:62px;display:flex;flex-direction:column;justify-content:flex-end;padding:6px;font:12px ui-monospace,Consolas,monospace;cursor:pointer;text-align:left}
+.sw b{font-size:13px}
+.f{display:block;width:100%;text-align:left;background:#faf9ff;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 10px;margin-bottom:6px}
+.f span{display:block;color:var(--muted);font-size:13px}
+.kit{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px}
+.kit .t{font-weight:700;display:flex;justify-content:space-between;gap:6px;margin-bottom:6px}.kit .t small{font-weight:400;color:var(--muted)}
+.mini{display:flex;gap:4px;margin-bottom:6px}.mini i{width:26px;height:26px;border-radius:6px;border:1px solid #0002;cursor:pointer}
+.kit button{padding:4px 10px;font-size:13px}
+pre{background:#1d1b2e;color:#e9e6ff;padding:10px;border-radius:8px;font-size:12px;white-space:pre-wrap;max-height:220px;overflow:auto}
+.empty{color:var(--muted);font-size:14px}
+ol{padding-left:20px;margin:6px 0}
+.note{background:#fff8e1;border:1px solid #f0dd9a;border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:14px}
+#toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 14px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .15s}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Style Spy</h1>
+<p class="lead">See a website's main colours and fonts in one click, save them as a kit, and export CSS variables. Nothing is sent anywhere. Everything runs in your browser.</p>
+
+<div class="note"><b>Demo page.</b> A web page cannot read other websites, so this page scans the sample sites below (or your own HTML). The real tool for any website is the Chrome extension: see the install steps at the bottom.</div>
+
+<div class="grid">
+ <div class="card">
+  <h2>1. Pick a site to scan</h2>
+  <div class="row"><select id="sample" aria-label="Sample site"><option value="0">TECHNOVA 2026 (college fest)</option><option value="1">Chai and Co. (café)</option><option value="2">Bright Path Classes (coaching)</option><option value="3">My own HTML (paste below)</option></select><button id="scan">Scan this site</button></div>
+  <iframe id="site" title="Site being scanned"></iframe>
+  <details style="margin-top:10px"><summary>Paste your own HTML and CSS</summary>
+   <textarea id="own" placeholder="Paste a full HTML page here, then choose 'My own HTML' above and click Scan." aria-label="Your own HTML"></textarea>
+   <div class="row"><button class="alt" id="loadown">Show my HTML</button></div></details>
+ </div>
+ <div>
+  <div class="card" id="resbox">
+   <h2>2. Colours <small>ranked by use on screen. Click to copy.</small></h2><div id="cols" class="cols"></div>
+   <h2>Fonts <small>click a row to copy its CSS</small></h2><div id="fonts"></div>
+   <h2>3. Save as a kit</h2>
+   <div class="row"><input id="kname" placeholder="Kit name" maxlength="40" aria-label="Kit name"><button id="save">Save kit</button></div>
+   <details><summary>CSS variables preview</summary><pre id="css"></pre></details>
+   <div class="row"><button id="copycss">Copy as CSS</button><button class="alt" id="dlcss">Download .css</button></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h2>Saved kits</h2><div id="kits"></div></div>
+ </div>
+</div>
+
+<div class="card" style="margin-top:18px">
+ <h2>Use it on any website: install the Chrome extension</h2>
+ <ol>
+  <li>Download the <code>style-spy</code> extension folder from this project's GitHub repo (all files together).</li>
+  <li>In Chrome, open <code>chrome://extensions</code> and turn on <b>Developer mode</b>.</li>
+  <li>Click <b>Load unpacked</b> and choose the <code>style-spy</code> folder.</li>
+  <li>Pin Style Spy from the puzzle-piece menu, open any website, and click the icon.</li>
+ </ol>
+</div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>/* Runs inside the web page. Must be fully self-contained. */
+function analyzePage() {
+  if (!document.body) return null;
+  const cvs = document.createElement("canvas");
+  cvs.width = cvs.height = 1;
+  const cx = cvs.getContext("2d", { willReadFrequently: true });
+  const cache = {};
+  // Turn any CSS colour (rgb, hsl, oklch, names...) into #rrggbb. Returns null if it is see-through.
+  function norm(c) {
+    if (c in cache) return cache[c];
+    let r = null;
+    try {
+      cx.clearRect(0, 0, 1, 1);
+      cx.fillStyle = "#000";
+      cx.fillStyle = c;
+      cx.fillRect(0, 0, 1, 1);
+      const d = cx.getImageData(0, 0, 1, 1).data;
+      if (d[3] >= 13) r = "#" + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, "0")).join("");
+    } catch (e) {}
+    return (cache[c] = r);
+  }
+  const W = innerWidth, H = innerHeight;
+  const bgW = {}, txW = {};
+
+  // 1. Background colours: sample a grid of points on the screen and see what is really there.
+  const gx = 32, gy = 24, cell = (W * H) / (gx * gy);
+  for (let i = 0; i < gx; i++) {
+    for (let j = 0; j < gy; j++) {
+      let el = document.elementFromPoint((i + 0.5) * W / gx, (j + 0.5) * H / gy), col = null;
+      while (el && el.nodeType === 1) {
+        const c = norm(getComputedStyle(el).backgroundColor);
+        if (c) { col = c; break; }
+        el = el.parentElement;
+      }
+      col = col || "#ffffff";
+      bgW[col] = (bgW[col] || 0) + cell;
+    }
+  }
+
+  // 2. Text colours and fonts: walk every visible piece of text.
+  const fonts = {};
+  const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let node, count = 0;
+  while ((node = tw.nextNode()) && count < 6000) {
+    const t = node.nodeValue.trim();
+    if (!t) continue;
+    const el = node.parentElement;
+    if (!el || /^(SCRIPT|STYLE|NOSCRIPT)$/.test(el.tagName)) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) continue;
+    const s = getComputedStyle(el);
+    if (s.visibility !== "visible" || s.display === "none" || parseFloat(s.opacity) === 0) continue;
+    count++;
+    const fs = parseFloat(s.fontSize) || 16, area = t.length * fs * fs * 0.5;
+    const fam = (s.fontFamily.split(",")[0] || "").trim().replace(/^["']|["']$/g, "");
+    const wt = s.fontWeight === "normal" ? "400" : s.fontWeight === "bold" ? "700" : s.fontWeight;
+    const key = fam + "|" + wt;
+    const f = fonts[key] || (fonts[key] = { family: fam, stack: s.fontFamily, weight: wt, area: 0, sizes: {}, maxSize: 0, heading: 0 });
+    const sz = Math.round(fs);
+    f.area += area; f.sizes[sz] = (f.sizes[sz] || 0) + area; f.maxSize = Math.max(f.maxSize, fs);
+    if (/^H[1-3]$/.test(el.tagName)) f.heading += area;
+    if (r.bottom > 0 && r.top < H && r.right > 0 && r.left < W) {
+      const c = norm(s.color);
+      if (c) txW[c] = (txW[c] || 0) + area;
+    }
+  }
+
+  // 3. Rank colours by how much of the screen they cover.
+  const all = {};
+  [bgW, txW].forEach(m => Object.keys(m).forEach(k => (all[k] = (all[k] || 0) + m[k])));
+  const total = Object.values(all).reduce((a, b) => a + b, 0) || 1;
+  const colors = Object.keys(all).sort((a, b) => all[b] - all[a]).slice(0, 8)
+    .map(hex => ({ hex, pct: Math.round(all[hex] / total * 1000) / 10 }));
+  const top = m => Object.keys(m).sort((a, b) => m[b] - m[a])[0] || null;
+  const chroma = h => { const v = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); return Math.max(...v) - Math.min(...v); };
+  const bg = top(bgW);
+  const lum = h => { const v = [1, 3, 5].map(i => { const c = parseInt(h.slice(i, i + 2), 16) / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+  const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  // Main text colour: the most used text colour that is easy to read on the main background.
+  const byUse = Object.keys(txW).sort((a, b) => txW[b] - txW[a]);
+  const text = (bg && (byUse.find(h => contrast(h, bg) >= 4.5) || byUse.slice().sort((a, b) => contrast(b, bg) - contrast(a, bg))[0])) || byUse[0] || null;
+  const accentHex = Object.keys(all).sort((a, b) => all[b] - all[a]).find(h => h !== bg && h !== text && chroma(h) >= 30);
+
+  // 4. Rank fonts.
+  const list = Object.values(fonts).sort((a, b) => b.area - a.area);
+  const ftotal = list.reduce((a, f) => a + f.area, 0) || 1;
+  const out = list.slice(0, 6).map(f => ({
+    family: f.family, stack: f.stack, weight: f.weight,
+    pct: Math.round(f.area / ftotal * 1000) / 10,
+    sizes: Object.keys(f.sizes).sort((a, b) => f.sizes[b] - f.sizes[a]).slice(0, 3).map(Number)
+  }));
+  const pick = f => f && { family: f.family, stack: f.stack, weight: f.weight };
+  const body = pick(list[0]);
+  const withH = list.filter(f => f.heading > 0).sort((a, b) => b.heading - a.heading)[0];
+  const heading = pick(withH || list.slice().sort((a, b) => b.maxSize - a.maxSize)[0]);
+  return { title: document.title, host: location.hostname || "this page", colors, bg, text, accent: accentHex || null, fonts: out, heading, body };
+}
+</script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const SAMPLES=[
+`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;background:#2a1458;color:#f1ecff;font:16px "Trebuchet MS",Arial,sans-serif}header{padding:34px 24px}h1{font:700 40px Georgia,serif;margin:0 0 8px;color:#fff}.b{display:inline-block;background:#ffd23f;color:#2a1458;font-weight:700;padding:12px 22px;border-radius:6px}main{background:#f6f2ff;color:#241a3d;padding:24px}.c{display:inline-block;background:#6a3fd1;color:#fff;padding:8px 14px;margin:4px;border-radius:6px}</style></head><body><header><h1>TECHNOVA 2026</h1><p>Three days of robotics, code and music.</p><span class="b">Register now</span></header><main><p>Robotics, hackathon and music night. Teams from 40 colleges will build, race and perform on one campus.</p><span class="c">Robotics</span><span class="c">Hackathon</span><span class="c">Music night</span></main></body></html>`,
+`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;background:#143d33;color:#f4ede0;font:17px "Segoe UI",Arial,sans-serif;padding:28px 24px}h1{font:italic 400 52px Georgia,serif;margin:0 0 6px}.b{display:inline-block;background:#f0a43a;color:#2a1a05;font-weight:700;padding:12px 22px;border-radius:6px;margin:10px 0}.m{background:#1d5446;padding:12px 16px;border-radius:8px;margin:5px 0}</style></head><body><h1>Chai and Co.</h1><p>Fresh chai and snacks, all day.</p><span class="b">See today's special</span><div class="m">Masala chai ₹30</div><div class="m">Cold coffee ₹90</div><div class="m">Maska pav ₹45</div></body></html>`,
+`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;background:#eaf0ff;color:#1b2559;font:16px Verdana,Arial,sans-serif;padding:26px 22px}h1{font:700 34px Verdana,sans-serif;margin:0 0 8px;color:#1a2a6c}.b{display:inline-block;background:#2547d0;color:#fff;font-weight:700;padding:12px 20px;border-radius:6px;margin:10px 0}.t{background:#fff;border:1px solid #c5d1f5;border-radius:8px;padding:10px 14px;margin:6px 0}</style></head><body><h1>Bright Path Classes</h1><p>JEE and NEET batches near you.</p><span class="b">Book a free demo</span><div class="t">Small batches</div><div class="t">Weekly tests</div><div class="t">Doubt desk</div></body></html>`];
+let current=null;
+function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),1400)}
+function copy(text,label){const done=()=>toast("Copied "+label);
+ const fb=()=>{const a=document.createElement("textarea");a.value=text;document.body.appendChild(a);a.select();try{document.execCommand("copy")}catch(e){}a.remove();done()};
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done).catch(fb);else fb()}
+const textOn=h=>{const[r,g,b]=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));return(r*299+g*587+b*114)/1000>140?"#111":"#fff"};
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+function kitCSS(d,name){const L=[];L.push("/* Style Spy kit: "+(name||d.host).replace(/\*\//g,"")+" */",":root {");
+ if(d.bg)L.push("  --color-bg: "+d.bg+";");if(d.text)L.push("  --color-text: "+d.text+";");if(d.accent)L.push("  --color-accent: "+d.accent+";");
+ d.colors.forEach((c,i)=>L.push("  --color-"+(i+1)+": "+c.hex+";"));
+ if(d.heading)L.push("  --font-heading: "+d.heading.stack+";","  --heading-weight: "+d.heading.weight+";");
+ if(d.body)L.push("  --font-body: "+d.body.stack+";","  --body-weight: "+d.body.weight+";");
+ L.push("}","","body { background: var(--color-bg, #fff); color: var(--color-text, #111); font-family: var(--font-body, sans-serif); font-weight: var(--body-weight, 400); }","h1, h2, h3 { font-family: var(--font-heading, inherit); font-weight: var(--heading-weight, 700); }","a, button { color: var(--color-accent, inherit); }");return L.join("\n")}
+function download(name,text){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:"text/css"}));
+ a.download=(name||"kit").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")+".css";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+
+function showResult(d){current=d;
+ const cols=$("cols");cols.textContent="";
+ d.colors.forEach(c=>{const b=el("button","sw");b.style.background=c.hex;b.style.color=textOn(c.hex);b.style.borderColor="#0002";
+  b.appendChild(el("b",null,c.hex));b.appendChild(el("span",null,c.pct+"%"));b.title="Click to copy "+c.hex;b.onclick=()=>copy(c.hex,c.hex);cols.appendChild(b)});
+ const fl=$("fonts");fl.textContent="";if(!d.fonts.length)fl.appendChild(el("p","empty","No visible text found."));
+ d.fonts.forEach(f=>{const b=el("button","f");b.appendChild(el("b",null,f.family+" · "+f.weight));b.appendChild(el("span",null,"sizes "+f.sizes.join(", ")+" px · "+f.pct+"% of text"));
+  b.onclick=()=>copy("font-family: "+f.stack+";\nfont-weight: "+f.weight+";\nfont-size: "+(f.sizes[0]||16)+"px;",f.family);fl.appendChild(b)});
+ $("css").textContent=kitCSS(d,$("kname").value.trim())}
+
+const frame=$("site");
+function loadSite(){const v=+$("sample").value;frame.srcdoc=v<3?SAMPLES[v]:($("own").value||"<p style='font:16px sans-serif;padding:20px'>Paste your HTML below first.</p>")}
+function scan(){
+ try{const w=frame.contentWindow;if(!w||!w.document.body)throw 0;
+  const d=w.eval("("+analyzePage.toString()+")()");if(!d)throw 0;
+  d.host=["technova.demo","chai-and-co.demo","bright-path.demo","my-own-page"][+$("sample").value];
+  if(!$("kname").value||$("kname").dataset.auto==="1"){$("kname").value=d.host;$("kname").dataset.auto="1"}
+  showResult(d)}catch(e){toast("Could not scan. Try again in a moment.")}}
+$("sample").onchange=()=>{loadSite();frame.onload=scan};
+$("scan").onclick=scan;$("loadown").onclick=()=>{$("sample").value="3";loadSite();frame.onload=scan};
+$("kname").addEventListener("input",()=>{$("kname").dataset.auto="0";if(current)$("css").textContent=kitCSS(current,$("kname").value.trim())});
+
+/* saved kits (kept in this browser with localStorage) */
+const KEY="style-spy-kits-v1";
+const getKits=()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}};
+const setKits=k=>{try{localStorage.setItem(KEY,JSON.stringify(k))}catch(e){toast("Could not save in this browser")}};
+function renderKits(){const box=$("kits"),kits=getKits();box.textContent="";
+ if(!kits.length){box.appendChild(el("p","empty","No saved kits yet. Scan a site and save one."));return}
+ kits.forEach(k=>{const w=el("div","kit"),t=el("div","t");t.appendChild(el("span",null,k.name));t.appendChild(el("small",null,k.data.host));w.appendChild(t);
+  const mini=el("div","mini");k.data.colors.slice(0,8).forEach(c=>{const i=el("i");i.style.background=c.hex;i.title=c.hex;i.onclick=()=>copy(c.hex,c.hex);mini.appendChild(i)});w.appendChild(mini);
+  if(k.data.heading||k.data.body)w.appendChild(el("p","empty",[k.data.heading&&"Heading: "+k.data.heading.family+" "+k.data.heading.weight,k.data.body&&"Body: "+k.data.body.family+" "+k.data.body.weight].filter(Boolean).join(" · ")));
+  const row=el("div","row"),c=el("button",null,"Copy CSS"),d=el("button","alt","Download"),x=el("button","del","Delete");
+  c.onclick=()=>copy(kitCSS(k.data,k.name),"CSS");d.onclick=()=>download(k.name,kitCSS(k.data,k.name));
+  x.onclick=()=>{setKits(getKits().filter(z=>z.id!==k.id));renderKits()};row.append(c,d,x);w.appendChild(row);box.appendChild(w)})}
+$("save").onclick=()=>{const name=$("kname").value.trim();if(!current){toast("Scan a site first");return}
+ if(!name){toast("Type a kit name first");$("kname").focus();return}
+ const kits=getKits().filter(k=>k.name.toLowerCase()!==name.toLowerCase());kits.unshift({id:Date.now(),name,data:current});setKits(kits);renderKits();toast("Saved kit "+name)};
+$("copycss").onclick=()=>current?copy(kitCSS(current,$("kname").value.trim()),"CSS"):toast("Scan a site first");
+$("dlcss").onclick=()=>current?download($("kname").value.trim()||current.host,kitCSS(current,$("kname").value.trim())):toast("Scan a site first");
+frame.onload=scan;loadSite();renderKits();
+</script>
+</body>
+</html>
