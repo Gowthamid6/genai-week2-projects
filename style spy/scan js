@@ -1,0 +1,99 @@
+function analyzePage() {
+  if (!document.body) return null;
+  const cvs = document.createElement("canvas");
+  cvs.width = cvs.height = 1;
+  const cx = cvs.getContext("2d", { willReadFrequently: true });
+  const cache = {};
+  // Turn any CSS colour (rgb, hsl, oklch, names...) into #rrggbb. Returns null if it is see-through.
+  function norm(c) {
+    if (c in cache) return cache[c];
+    let r = null;
+    try {
+      cx.clearRect(0, 0, 1, 1);
+      cx.fillStyle = "#000";
+      cx.fillStyle = c;
+      cx.fillRect(0, 0, 1, 1);
+      const d = cx.getImageData(0, 0, 1, 1).data;
+      if (d[3] >= 13) r = "#" + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, "0")).join("");
+    } catch (e) {}
+    return (cache[c] = r);
+  }
+  const W = innerWidth, H = innerHeight;
+  const bgW = {}, txW = {};
+ 
+  // 1. Background colours: sample a grid of points on the screen and see what is really there.
+  const gx = 32, gy = 24, cell = (W * H) / (gx * gy);
+  for (let i = 0; i < gx; i++) {
+    for (let j = 0; j < gy; j++) {
+      let el = document.elementFromPoint((i + 0.5) * W / gx, (j + 0.5) * H / gy), col = null;
+      while (el && el.nodeType === 1) {
+        const c = norm(getComputedStyle(el).backgroundColor);
+        if (c) { col = c; break; }
+        el = el.parentElement;
+      }
+      col = col || "#ffffff";
+      bgW[col] = (bgW[col] || 0) + cell;
+    }
+  }
+ 
+  // 2. Text colours and fonts: walk every visible piece of text.
+  const fonts = {};
+  const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let node, count = 0;
+  while ((node = tw.nextNode()) && count < 6000) {
+    const t = node.nodeValue.trim();
+    if (!t) continue;
+    const el = node.parentElement;
+    if (!el || /^(SCRIPT|STYLE|NOSCRIPT)$/.test(el.tagName)) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) continue;
+    const s = getComputedStyle(el);
+    if (s.visibility !== "visible" || s.display === "none" || parseFloat(s.opacity) === 0) continue;
+    count++;
+    const fs = parseFloat(s.fontSize) || 16, area = t.length * fs * fs * 0.5;
+    const fam = (s.fontFamily.split(",")[0] || "").trim().replace(/^["']|["']$/g, "");
+    const wt = s.fontWeight === "normal" ? "400" : s.fontWeight === "bold" ? "700" : s.fontWeight;
+    const key = fam + "|" + wt;
+    const f = fonts[key] || (fonts[key] = { family: fam, stack: s.fontFamily, weight: wt, area: 0, sizes: {}, maxSize: 0, heading: 0 });
+    const sz = Math.round(fs);
+    f.area += area; f.sizes[sz] = (f.sizes[sz] || 0) + area; f.maxSize = Math.max(f.maxSize, fs);
+    if (/^H[1-3]$/.test(el.tagName)) f.heading += area;
+    if (r.bottom > 0 && r.top < H && r.right > 0 && r.left < W) {
+      const c = norm(s.color);
+      if (c) txW[c] = (txW[c] || 0) + area;
+    }
+  }
+ 
+  // 3. Rank colours by how much of the screen they cover.
+  const all = {};
+  [bgW, txW].forEach(m => Object.keys(m).forEach(k => (all[k] = (all[k] || 0) + m[k])));
+  const total = Object.values(all).reduce((a, b) => a + b, 0) || 1;
+  const colors = Object.keys(all).sort((a, b) => all[b] - all[a]).slice(0, 8)
+    .map(hex => ({ hex, pct: Math.round(all[hex] / total * 1000) / 10 }));
+  const top = m => Object.keys(m).sort((a, b) => m[b] - m[a])[0] || null;
+  const chroma = h => { const v = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); return Math.max(...v) - Math.min(...v); };
+  const bg = top(bgW);
+  const lum = h => { const v = [1, 3, 5].map(i => { const c = parseInt(h.slice(i, i + 2), 16) / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+  const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  // Main text colour: the most used text colour that is easy to read on the main background.
+  const byUse = Object.keys(txW).sort((a, b) => txW[b] - txW[a]);
+  const text = (bg && (byUse.find(h => contrast(h, bg) >= 4.5) || byUse.slice().sort((a, b) => contrast(b, bg) - contrast(a, bg))[0])) || byUse[0] || null;
+  const accentHex = Object.keys(all).sort((a, b) => all[b] - all[a]).find(h => h !== bg && h !== text && chroma(h) >= 30);
+ 
+  // 4. Rank fonts.
+  const list = Object.values(fonts).sort((a, b) => b.area - a.area);
+  const ftotal = list.reduce((a, f) => a + f.area, 0) || 1;
+  const out = list.slice(0, 6).map(f => ({
+    family: f.family, stack: f.stack, weight: f.weight,
+    pct: Math.round(f.area / ftotal * 1000) / 10,
+    sizes: Object.keys(f.sizes).sort((a, b) => f.sizes[b] - f.sizes[a]).slice(0, 3).map(Number)
+  }));
+  const pick = f => f && { family: f.family, stack: f.stack, weight: f.weight };
+  const body = pick(list[0]);
+  const withH = list.filter(f => f.heading > 0).sort((a, b) => b.heading - a.heading)[0];
+  const heading = pick(withH || list.slice().sort((a, b) => b.maxSize - a.maxSize)[0]);
+  return { title: document.title, host: location.hostname || "this page", colors, bg, text, accent: accentHex || null, fonts: out, heading, body };
+}
+ 
+
+Claude finished the response
