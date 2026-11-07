@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chai and Co.</title>
+<style>
+:root{--bg:#0f2b2e;--bg2:#163c40;--text:#f1efe6;--muted:#a9c2bf;--gold:#f2b63d;--ink:#0f2b2e}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;font-size:1.0625rem;line-height:1.6}
+main{max-width:46rem;margin:0 auto;padding:clamp(2rem,8vw,5rem) 1.25rem 3rem}
+h1{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-weight:400;font-size:clamp(3.2rem,15vw,7rem);line-height:.95;margin:0 0 1rem;letter-spacing:-.02em}
+.tag{font-size:clamp(1.15rem,3.5vw,1.5rem);color:var(--muted);margin:0 0 1.75rem;max-width:22ch}
+.btn{display:inline-block;background:var(--gold);color:var(--ink);font-weight:700;text-decoration:none;padding:.8rem 1.4rem;border-radius:.4rem}
+.btn:hover{background:#ffc95a}
+a:focus-visible{outline:3px solid var(--text);outline-offset:3px}
+h2{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:1.6rem;margin:0 0 1rem}
+section{margin-top:clamp(2.5rem,8vw,4.5rem)}
+.menu{list-style:none;margin:0;padding:0}
+.menu li{display:flex;align-items:baseline;gap:.6rem;font-size:1.2rem;padding:.45rem 0}
+.menu li::after{content:"";order:2;flex:1;border-bottom:2px dotted #4d7a78;transform:translateY(-.25em)}
+.menu .p{order:3;color:var(--gold);font-weight:700}
+.special{background:var(--bg2);border-left:6px solid var(--gold);padding:1.5rem 1.5rem 1.6rem;border-radius:0 .5rem .5rem 0}
+.special h2{margin-bottom:.4rem}
+.special p{margin:0;font-size:1.25rem}
+.visit p{margin:0;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Chai and Co.</h1>
+<p class="tag">Fresh chai and snacks, all day.</p>
+<a class="btn" href="#special">See today's special</a>
+</header>
+
+<section aria-labelledby="menu">
+<h2 id="menu">Menu</h2>
+<ul class="menu">
+<li><span>Masala chai</span><span class="p">₹30</span></li>
+<li><span>Cold coffee</span><span class="p">₹90</span></li>
+<li><span>Maska pav</span><span class="p">₹45</span></li>
+</ul>
+</section>
+
+<section class="special" id="special">
+<h2>Today's special</h2>
+<p>Maska pav with masala chai, ₹70.</p>
+</section>
+
+<section class="visit">
+<h2>Visit us</h2>
+<p>12 Temple Road, Mysuru. Open 7 am to 10 pm.</p>
+</section>
+</main>
+</body>
+</html>
